@@ -28,14 +28,26 @@ sys.path.append(osp.dirname(osp.abspath(__file__)))
 from smplx.smplx import SMPLLayer
 
 META = {
-    "my_377": {"begin_ith_frame": 0, "num_train_frame": 100, "frame_interval": 5},
-    "my_386": {"begin_ith_frame": 0, "num_train_frame": 100, "frame_interval": 5},
-    "my_387": {"begin_ith_frame": 0, "num_train_frame": 100, "frame_interval": 5},
-    # "my_390": {"begin_ith_frame": 0, "num_train_frame": 100, "frame_interval": 5},
+    "my_377": {"begin_train_frame": 0, "end_train_frame": 100, "frame_interval_train": 5},
+    "my_386": {"begin_train_frame": 0, "end_train_frame": 100, "frame_interval_train": 5},
+    "my_387": {"begin_train_frame": 0, "end_train_frame": 100, "frame_interval_train": 5},
+    # "my_390": {"begin_train_frame": 0, "end_train_frame": 100, "frame_interval_train": 5},
     # ! 390 is not used for testing
-    "my_392": {"begin_ith_frame": 0, "num_train_frame": 100, "frame_interval": 5},
-    "my_393": {"begin_ith_frame": 0, "num_train_frame": 100, "frame_interval": 5},
-    "my_394": {"begin_ith_frame": 0, "num_train_frame": 100, "frame_interval": 5},
+    "my_392": {"begin_train_frame": 0, "end_train_frame": 100, "frame_interval_train": 5},
+    "my_393": {"begin_train_frame": 0, "end_train_frame": 100, "frame_interval_train": 5},
+    "my_394": {"begin_train_frame": 0, "end_train_frame": 100, "frame_interval_train": 5},
+}
+
+META = {
+    "313": {"begin_train_frame": 0, "end_train_frame": 800, "frame_interval_train": 1, "end_eval_frame": 1000, "frame_interval_eval": 30},
+    "315": {"begin_train_frame": 0, "end_train_frame": 1600, "frame_interval_train": 1, "end_eval_frame": 2000, "frame_interval_eval": 30},
+    "377": {"begin_train_frame": 0, "end_train_frame": 456, "frame_interval_train": 1, "end_eval_frame": 570, "frame_interval_eval": 30},
+    "386": {"begin_train_frame": 0, "end_train_frame": 432, "frame_interval_train": 1, "end_eval_frame": 540, "frame_interval_eval": 30},
+    "387": {"begin_train_frame": 0, "end_train_frame": 432, "frame_interval_train": 1, "end_eval_frame": 540, "frame_interval_eval": 30},
+    "390": {"begin_train_frame": 0, "end_train_frame": 937, "frame_interval_train": 1, "end_eval_frame": 1171, "frame_interval_eval": 30},
+    "392": {"begin_train_frame": 0, "end_train_frame": 445, "frame_interval_train": 1, "end_eval_frame": 556, "frame_interval_eval": 30},
+    "393": {"begin_train_frame": 0, "end_train_frame": 527, "frame_interval_train": 1, "end_eval_frame": 658, "frame_interval_eval": 30},
+    "394": {"begin_train_frame": 0, "end_train_frame": 380, "frame_interval_train": 1, "end_eval_frame": 475, "frame_interval_eval": 30},
 }
 
 # This is the sampler they used for testing, fro seq 377, the actual dataset len is 2200, but after their dataloader, they only use 374 frames!!
@@ -72,13 +84,13 @@ class Dataset(Dataset):
     # from instant avatar
     def __init__(
         self,
-        data_root="data/zju-mocap",
-        video_name="my_377",
+        data_root="../data/zju_mocap",
+        video_name="377",
         split="train",
         image_zoom_ratio=0.5,  # 0.5,  # instant-nvr use 0.5 for both train and test
         # for cfg input from instant-nvr
         # for zju mocap instant-nvr use test_view: []; training_view: [4]
-        training_view=[4], #[0,4,8,12,16,20], #[4],  # [4],  # 4
+        training_view=[0], #[0,4,8,12,16,20], #[4],  # [4],  # 4
         num_eval_frame=-1,
         test_novel_pose=False,
         # my cfg
@@ -117,33 +129,36 @@ class Dataset(Dataset):
             self.view = test_view[::4]
             # self.view = test_view
 
-        i = META[self.video_name]["begin_ith_frame"]
-        i_intv = META[self.video_name]["frame_interval"]
-        self.f_intv = i_intv
-        ni = META[self.video_name]["num_train_frame"]
+        i = META[self.video_name]["begin_train_frame"]
+        i_intv = META[self.video_name]["frame_interval_train"]
+        ni = META[self.video_name]["end_train_frame"]
         if split == "val":
             # * Seems the
             self.view = [5]
             self.tick = 0
             ni = 500
             i_intv = 1
+
+        if split == 'test':
+            i_intv = META[self.video_name]["frame_interval_eval"]
+
         if test_novel_pose:
             i = (
-                META[self.video_name]["begin_ith_frame"]
-                + META[self.video_name]["num_train_frame"] * i_intv
+                META[self.video_name]["begin_train_frame"]
+                + META[self.video_name]["end_train_frame"]
             )
-            ni = num_eval_frame
+            ni = META[self.video_name]["end_eval_frame"]
 
         self.ims = np.array(
             [
                 np.array(ims_data["ims"])[self.view]
-                for ims_data in annots["ims"][i : i + ni * i_intv][::i_intv]
+                for ims_data in annots["ims"][i : ni][::i_intv]
             ]
         ).ravel()
         self.cam_inds = np.array(
             [
                 np.arange(len(ims_data["ims"]))[self.view]
-                for ims_data in annots["ims"][i : i + ni * i_intv][::i_intv]
+                for ims_data in annots["ims"][i : ni][::i_intv]
             ]
         ).ravel()
         self.num_cams = len(self.view)
@@ -176,7 +191,7 @@ class Dataset(Dataset):
             self.cams["R"][cid] = new_R
 
         # this is copied
-        smpl_layer = SMPLLayer(osp.join(osp.dirname(__file__), "../data/smpl-meta/SMPL_NEUTRAL.pkl"))
+        smpl_layer = SMPLLayer(osp.join(osp.dirname(__file__), "../../data/smpl-meta/SMPL_NEUTRAL.pkl"))
 
         # * Load smpl to camera frame
         self.smpl_theta_list, self.smpl_trans_list, smpl_beta_list = [], [], []
@@ -292,12 +307,13 @@ class Dataset(Dataset):
         return len(self.ims)
 
     def __getitem__(self, index):
-        img_path = os.path.join(self.data_root, self.video_name, self.ims[index])
+        img_path = os.path.join(self.data_root, self.video_name, 'images', self.ims[index])
         img = imageio.imread(img_path).astype(np.float32) / 255.0
         mask_path = os.path.join(
             self.data_root,
             self.video_name,
-            self.ims[index].replace("images", "mask").replace(".jpg", ".png"),
+            'mask',
+            self.ims[index].replace(".jpg", ".png"),
         )
         msk = imageio.imread(mask_path)
 

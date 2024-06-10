@@ -41,7 +41,7 @@ def prepare_real_seq(
         print("Load Instant Avatar processed PeopleSnapshot")
     elif dataset_mode == "zju":
         dataset = ZJUDataset(
-            data_root="./data/zju_mocap",
+            data_root="../data/zju_mocap",
             video_name=seq_name,
             split=split,
             image_zoom_ratio=image_zoom_ratio,

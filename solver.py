@@ -1318,7 +1318,7 @@ if __name__ == "__main__":
 
     # prepare
     if dataset_mode == "zju":
-        smpl_path = "./data/smpl-meta/SMPL_NEUTRAL.pkl"
+        smpl_path = "../data/smpl-meta/SMPL_NEUTRAL.pkl"
         mode = "human"
     elif dataset_mode == "people_snapshot":
         mode = "human"

@@ -92,8 +92,9 @@ def test(
     elif dataset_mode == "zju":
         eval_mode = "nvr"
         test_dataset = ZJUDataset(
-            data_root="./data/zju_mocap",
+            data_root="../data/zju_mocap",
             video_name=seq_name,
+            test_novel_pose=False,
             split="test",
             image_zoom_ratio=0.5,
         )
@@ -202,7 +203,7 @@ def _save_eval_maps(
         # ! follow instant-nvr evaluation
         iter_test_dataset = torch.utils.data.DataLoader(
             test_dataset,
-            batch_sampler=get_batch_sampler(test_dataset, frame_sampler_interval=6),
+            batch_sampler=get_batch_sampler(test_dataset, frame_sampler_interval=1),
             num_workers=0,
         )
     else:
@@ -227,7 +228,8 @@ def _save_eval_maps(
         trans = torch.as_tensor(data["smpl_trans"]).float().to(device)[None]
             
         if dataset_mode == "zju":
-            fn = f"frame{int(meta['frame_idx']):04d}_view{int(meta['cam_ind']):04d}.png"
+            # fn = f"frame{int(meta['frame_idx']):04d}_view{int(meta['cam_ind']):04d}.png"
+            fn = f"camera_{int(meta['cam_ind'])+1:02d}_frame_{int(meta['frame_idx']):06d}.png"
         else:
             fn = f"{batch_idx}.png"
             
