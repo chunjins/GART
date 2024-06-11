@@ -144,6 +144,8 @@ def render_cam_pcl(
         "viewspace_points": screenspace_points,
         "visibility_filter": radii > 0,
         "radii": radii,
+        "full_proj_transform": full_proj_transform,
+        "viewmatrix": viewmatrix,
     }
     if center_handling_flag:
         for k in ["rgb", "dep", "alpha"]:

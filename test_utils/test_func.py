@@ -14,12 +14,10 @@ from lib_render.gauspl_renderer import render_cam_pcl
 import cv2, glob
 import pandas as pd
 from tqdm import tqdm
-import imageio
 from lib_data.instant_avatar_people_snapshot import Dataset as InstantAvatarDataset
 from lib_data.zju_mocap import Dataset as ZJUDataset, get_batch_sampler
 from lib_data.instant_avatar_wild import Dataset as InstantAvatarWildDataset
 from lib_data.dog_demo import Dataset as DogDemoDataset
-from matplotlib import pyplot as plt
 import logging
 
 

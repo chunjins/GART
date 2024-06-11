@@ -22,6 +22,7 @@ from pytorch3d.transforms import matrix_to_axis_angle, axis_angle_to_matrix
 import torch
 import glob
 import sys
+import trimesh
 
 sys.path.append(osp.dirname(osp.abspath(__file__)))
 
@@ -47,7 +48,9 @@ META = {
     "390": {"begin_train_frame": 0, "end_train_frame": 937, "frame_interval_train": 1, "end_eval_frame": 1171, "frame_interval_eval": 30},
     "392": {"begin_train_frame": 0, "end_train_frame": 445, "frame_interval_train": 1, "end_eval_frame": 556, "frame_interval_eval": 30},
     "393": {"begin_train_frame": 0, "end_train_frame": 527, "frame_interval_train": 1, "end_eval_frame": 658, "frame_interval_eval": 30},
-    "394": {"begin_train_frame": 0, "end_train_frame": 380, "frame_interval_train": 1, "end_eval_frame": 475, "frame_interval_eval": 30},
+    "394": {"begin_train_frame": 0, "end_train_frame": 380, "frame_interval_train": 1,
+            "end_eval_frame": 475, "frame_interval_eval": 30,
+            "begin_geo_frame": 0, "end_geo_frame": 271, "frame_interval_geo": 30, },
 }
 
 # This is the sampler they used for testing, fro seq 377, the actual dataset len is 2200, but after their dataloader, they only use 374 frames!!
@@ -97,6 +100,7 @@ class Dataset(Dataset):
         bg_color=0.0,
     ) -> None:
         super().__init__()
+        self.split = split
         self.data_root = data_root
         self.video_name = video_name
         self.image_zoom_ratio = image_zoom_ratio
@@ -118,6 +122,8 @@ class Dataset(Dataset):
 
         num_cams = len(self.cams["K"])
         test_view = [i for i in range(num_cams) if i not in training_view]
+        all_view = [i for i in range(num_cams)]
+
         if len(test_view) == 0:
             test_view = [0]
 
@@ -125,6 +131,8 @@ class Dataset(Dataset):
             self.view = training_view
         elif split == "test":
             self.view = test_view
+        elif split == "geometry":
+            self.view = all_view
         elif split == "val":
             self.view = test_view[::4]
             # self.view = test_view
@@ -141,6 +149,10 @@ class Dataset(Dataset):
 
         if split == 'test':
             i_intv = META[self.video_name]["frame_interval_eval"]
+        if split == 'geometry':
+            i = META[self.video_name]["begin_geo_frame"]
+            i_intv = META[self.video_name]["frame_interval_geo"]
+            ni = META[self.video_name]["end_geo_frame"]
 
         if test_novel_pose:
             i = (
@@ -195,7 +207,9 @@ class Dataset(Dataset):
 
         # * Load smpl to camera frame
         self.smpl_theta_list, self.smpl_trans_list, smpl_beta_list = [], [], []
+        self.T_cw_list = []
         self.meta = []
+        self.num_frames = int(len(self.ims) / len(self.view))
         for img_fn in self.ims:
             cam_ind = int(img_fn.split("/")[-2])
             frame_idx = int(img_fn.split("/")[-1].split(".")[0])
@@ -239,6 +253,36 @@ class Dataset(Dataset):
             self.smpl_theta_list.append(smpl_theta)
             smpl_beta_list.append(beta)
             self.smpl_trans_list.append(smpl_trans)
+            self.T_cw_list.append(T_cw)
+
+
+            # smpl_vtx_human = (
+            #     smpl_layer(
+            #         torch.from_numpy(beta)[None],
+            #         body_pose=_pose[:, 1:],
+            #         # !!wired!!
+            #         global_orient=_pose[:, 0],
+            #         transl=torch.from_numpy(smpl_trans)[None],
+            #     )
+            #         .vertices[0]
+            #         .numpy()
+            # )
+            # dir_mesh = '/ubc/cs/home/c/chunjins/chunjin_scratch/project/code/gart/code/logs/zju_3m/seq=394_prof=zju_3m_data=zju/test_tto/mesh'
+            # pcd = trimesh.PointCloud(smpl_vtx_human)
+            # pcd.export(f'{dir_mesh}/smpl_vtx_human.ply')
+            # 
+            # vtx_fn = osp.join(root, "vertices", f"{frame_idx}.npy")
+            # nb_vtx_world = np.load(vtx_fn)
+            # pcd = trimesh.PointCloud(nb_vtx_world)
+            # pcd.export(f'{dir_mesh}/nb_vtx_world.ply')
+            # 
+            # # smpl_vtx_human -= t_correction
+            # 
+            # T_wc = np.linalg.inv(T_cw)
+            # smpl_vtx_human = np.dot(smpl_vtx_human, T_wc[:3, :3].T) + T_wc[:3, 3]
+            # 
+            # pcd = trimesh.PointCloud(smpl_vtx_human)
+            # pcd.export(f'{dir_mesh}/smpl_vtx_human2w.ply')
 
             # ! debug
             if DEBUG:
@@ -304,9 +348,14 @@ class Dataset(Dataset):
         return
 
     def __len__(self):
-        return len(self.ims)
+        if self.split == 'geometry':
+            return self.num_frames
+        else:
+            return len(self.ims)
 
-    def __getitem__(self, index):
+
+    def getitem(self, index):
+
         img_path = os.path.join(self.data_root, self.video_name, 'images', self.ims[index])
         img = imageio.imread(img_path).astype(np.float32) / 255.0
         mask_path = os.path.join(
@@ -339,6 +388,7 @@ class Dataset(Dataset):
             "smpl_beta": self.beta.astype(np.float32),
             "smpl_pose": self.smpl_theta_list[index].astype(np.float32),
             "smpl_trans": self.smpl_trans_list[index].astype(np.float32),
+            "T_cw": self.T_cw_list[index].astype(np.float32),
             "idx": index,
         }
 
@@ -353,6 +403,49 @@ class Dataset(Dataset):
         meta_info["viz_id"] = viz_id
         return ret, meta_info
 
+    def __getitem__(self, index):
+        if self.split == 'geometry':
+            idxs = [index * self.num_cams + cam for cam in range(self.num_cams)]
+            rets = []
+            meta_infos = []
+            for idx in idxs:
+                ret, meta_info = self.getitem(idx)
+                rets.append(ret)
+                meta_infos.append(meta_info)
+
+
+            # # this is copied
+            # smpl_layer = SMPLLayer(osp.join(osp.dirname(__file__), "../../data/smpl-meta/SMPL_NEUTRAL.pkl"))
+            # dir_mesh = '/ubc/cs/home/c/chunjins/chunjin_scratch/project/code/gart/code/logs/zju_3m/seq=394_prof=zju_3m_data=zju/test_tto/mesh'
+            #
+            # for k in range(0, 23):
+            #     T_cw = rets[k]['T_cw']
+            #     beta = rets[k]['smpl_beta']
+            #     _pose = rets[k]['smpl_pose']
+            #     _pose = axis_angle_to_matrix(torch.from_numpy(_pose)[None])
+            #     smpl_trans = rets[k]['smpl_trans']
+            #     smpl_vtx = (
+            #         smpl_layer(
+            #             torch.from_numpy(beta)[None],
+            #             body_pose=_pose[:, 1:],
+            #             global_orient=_pose[:, 0],
+            #             transl=torch.from_numpy(smpl_trans)[None],
+            #         )
+            #             .vertices[0]
+            #             .numpy()
+            #     )
+            #
+            #     # pcd = trimesh.PointCloud(smpl_vtx)
+            #     # pcd.export(f'{dir_mesh}/smpl_vtx_{k}.ply')
+            #
+            #     T_wc = np.linalg.inv(T_cw)
+            #     smpl_vtx = np.dot(smpl_vtx, T_wc[:3, :3].T) + T_wc[:3, 3]
+            #     pcd = trimesh.PointCloud(smpl_vtx)
+            #     pcd.export(f'{dir_mesh}/smpl_vtx_{k}.ply')
+
+            return rets, meta_infos
+        else:
+            return self.getitem(index)
 
 if __name__ == "__main__":
     dataset = Dataset(data_root="../data/zju-mocap")
