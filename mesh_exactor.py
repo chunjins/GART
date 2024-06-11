@@ -537,7 +537,7 @@ class TGFitter:
         default_bg=[1.0, 1.0, 1.0],
         add_bones_As=None,
     ):
-        gt_rgb, gt_mask, K, pose_base, pose_rest, global_trans, time_index = data_pack
+        gt_rgb, gt_mask, K, R, T, pose_base, pose_rest, global_trans, time_index = data_pack
         gt_rgb = gt_rgb.clone()
 
         pose = torch.cat([pose_base, pose_rest], dim=1)
@@ -570,7 +570,7 @@ class TGFitter:
             bg_tensor = torch.from_numpy(bg).float().to(gt_rgb.device)
             gt_rgb[i][gt_mask[i] == 0] = bg_tensor[None, None, :]
             render_pkg = render_cam_pcl(
-                mu[i], fr[i], sc[i], op[i], sph[i], H, W, K[i], False, act_sph_ord, bg
+                mu[i], fr[i], sc[i], op[i], sph[i], H, W, K[i], R[i], T[i], False, act_sph_ord, bg
             )
             if opa_th > 0.0:
                 bg_mask = render_pkg["alpha"][0] < opa_th
@@ -1057,7 +1057,7 @@ class TGFitter:
         seed_everything(self.SEED)
         model.eval()  # to get gradients, but never optimized
         evaluator.eval()
-        gt_rgb, gt_mask, K, pose_b, pose_r, trans = data_pack[:6]
+        gt_rgb, gt_mask, K, R, T, pose_b, pose_r, trans = data_pack[:8]
         pose_b = pose_b.detach().clone()
         pose_r = pose_r.detach().clone()
         trans = trans.detach().clone()
@@ -1088,7 +1088,7 @@ class TGFitter:
             optimizer_smpl.zero_grad()
             loss_recon, _, rendered_list, _, _, _, _ = self._fit_step(
                 model,
-                [gt_rgb, gt_mask, K, pose_b, pose_r, trans, None],
+                [gt_rgb, gt_mask, K, R, T, pose_b, pose_r, trans, None],
                 act_sph_ord=model.max_sph_order,
                 random_bg=False,
                 default_bg=getattr(self, "DEFAULT_BG", [1.0, 1.0, 1.0]),

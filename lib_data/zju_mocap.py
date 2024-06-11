@@ -207,7 +207,7 @@ class Dataset(Dataset):
 
         # * Load smpl to camera frame
         self.smpl_theta_list, self.smpl_trans_list, smpl_beta_list = [], [], []
-        self.T_cw_list = []
+        self.T_cw_list= []
         self.meta = []
         self.num_frames = int(len(self.ims) / len(self.view))
         for img_fn in self.ims:
@@ -232,7 +232,8 @@ class Dataset(Dataset):
             T_wh = np.eye(4)
             T_wh[:3, :3], T_wh[:3, 3] = smpl_R.copy(), smpl_trans.squeeze(0).copy()
 
-            T_ch = T_cw.astype(np.float64) @ T_wh.astype(np.float64)
+            # T_ch = T_cw.astype(np.float64) @ T_wh.astype(np.float64)
+            T_ch = T_wh.astype(np.float64)
 
             smpl_global_rot_d, smpl_global_rot_a = mat2axangle(T_ch[:3, :3])
             smpl_global_rot = smpl_global_rot_d * smpl_global_rot_a
@@ -255,8 +256,7 @@ class Dataset(Dataset):
             self.smpl_trans_list.append(smpl_trans)
             self.T_cw_list.append(T_cw)
 
-
-            # smpl_vtx_human = (
+            # smpl_vtx_human2 = (
             #     smpl_layer(
             #         torch.from_numpy(beta)[None],
             #         body_pose=_pose[:, 1:],
@@ -267,22 +267,17 @@ class Dataset(Dataset):
             #         .vertices[0]
             #         .numpy()
             # )
-            # dir_mesh = '/ubc/cs/home/c/chunjins/chunjin_scratch/project/code/gart/code/logs/zju_3m/seq=394_prof=zju_3m_data=zju/test_tto/mesh'
-            # pcd = trimesh.PointCloud(smpl_vtx_human)
-            # pcd.export(f'{dir_mesh}/smpl_vtx_human.ply')
-            # 
-            # vtx_fn = osp.join(root, "vertices", f"{frame_idx}.npy")
-            # nb_vtx_world = np.load(vtx_fn)
-            # pcd = trimesh.PointCloud(nb_vtx_world)
-            # pcd.export(f'{dir_mesh}/nb_vtx_world.ply')
-            # 
-            # # smpl_vtx_human -= t_correction
-            # 
-            # T_wc = np.linalg.inv(T_cw)
-            # smpl_vtx_human = np.dot(smpl_vtx_human, T_wc[:3, :3].T) + T_wc[:3, 3]
-            # 
-            # pcd = trimesh.PointCloud(smpl_vtx_human)
-            # pcd.export(f'{dir_mesh}/smpl_vtx_human2w.ply')
+            # smpl_vtx_cam = np.dot(smpl_vtx_human2, T_cw[:3, :3].T) + T_cw[:3, 3]
+            # img = imageio.imread(osp.join(root, 'images', img_fn)).astype(np.float32) / 255.0
+            # K = np.array(self.cams["K"][cam_ind])
+            # screen_smpl_vtx = np.dot(smpl_vtx_cam.copy(), K.T)
+            # screen_smpl_vtx = screen_smpl_vtx[:, :2] / screen_smpl_vtx[:, 2:]
+            # screen_smpl_vtx = screen_smpl_vtx.astype(np.int32)
+            # dbg = img.copy()
+            # for uv in screen_smpl_vtx:
+            #     dbg[uv[1], uv[0], :] = 1
+            # imageio.imsave("../debug/dbg.png", dbg)
+            # imageio.imsave("../debug/img.png", img)
 
             # ! debug
             if DEBUG:
@@ -381,10 +376,16 @@ class Dataset(Dataset):
 
         img[msk == 0] = self.bg_color
 
+        R = np.array(self.cams["R"][cam_ind])
+        T = np.array(self.cams["T"][cam_ind]).squeeze(-1) / 1000.0
+
+
         ret = {
             "rgb": img.astype(np.float32),
             "mask": msk.astype(np.bool).astype(np.float32),
             "K": K.copy().astype(np.float32),
+            "R": R.copy().astype(np.float32),
+            "T": T.copy().astype(np.float32),
             "smpl_beta": self.beta.astype(np.float32),
             "smpl_pose": self.smpl_theta_list[index].astype(np.float32),
             "smpl_trans": self.smpl_trans_list[index].astype(np.float32),

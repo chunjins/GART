@@ -224,6 +224,8 @@ def _save_eval_maps(
             mask_gt = torch.as_tensor(data["mask"])[None].float().to(device)
             H, W = rgb_gt.shape[1:3]
             K = torch.as_tensor(data["K"]).float().to(device)
+            R = torch.as_tensor(data["R"]).float().to(device)
+            T = torch.as_tensor(data["T"]).float().to(device)
             pose = torch.as_tensor(data["smpl_pose"]).float().to(device)[None]
             trans = torch.as_tensor(data["smpl_trans"]).float().to(device)[None]
 
@@ -250,6 +252,8 @@ def _save_eval_maps(
                         rgb_gt,
                         mask_gt,
                         K[None],
+                        R[None],
+                        T[None],
                         pose_b,
                         pose_r,
                         trans,
