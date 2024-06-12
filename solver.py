@@ -438,6 +438,8 @@ class TGFitter:
                     H,
                     W,
                     K[vid],
+                    R[vid],
+                    T[vid],
                     False,
                     act_sph_ord,
                     bg,
@@ -561,7 +563,7 @@ class TGFitter:
         default_bg=[1.0, 1.0, 1.0],
         add_bones_As=None,
     ):
-        gt_rgb, gt_mask, K, pose_base, pose_rest, global_trans, time_index = data_pack
+        gt_rgb, gt_mask, K, R, T, pose_base, pose_rest, global_trans, time_index = data_pack
         gt_rgb = gt_rgb.clone()
 
         pose = torch.cat([pose_base, pose_rest], dim=1)
@@ -594,7 +596,7 @@ class TGFitter:
             bg_tensor = torch.from_numpy(bg).float().to(gt_rgb.device)
             gt_rgb[i][gt_mask[i] == 0] = bg_tensor[None, None, :]
             render_pkg = render_cam_pcl(
-                mu[i], fr[i], sc[i], op[i], sph[i], H, W, K[i], False, act_sph_ord, bg
+                mu[i], fr[i], sc[i], op[i], sph[i], H, W, K[i], R[i], T[i], False, act_sph_ord, bg
             )
             if opa_th > 0.0:
                 bg_mask = render_pkg["alpha"][0] < opa_th
@@ -953,6 +955,8 @@ class TGFitter:
                         _,
                         _,
                         K,
+                        R,
+                        T,
                         pose_base,
                         pose_rest,
                         global_trans,
@@ -1081,7 +1085,7 @@ class TGFitter:
         seed_everything(self.SEED)
         model.eval()  # to get gradients, but never optimized
         evaluator.eval()
-        gt_rgb, gt_mask, K, pose_b, pose_r, trans = data_pack[:6]
+        gt_rgb, gt_mask, K, R, T, pose_b, pose_r, trans = data_pack[:8]
         pose_b = pose_b.detach().clone()
         pose_r = pose_r.detach().clone()
         trans = trans.detach().clone()
@@ -1112,7 +1116,7 @@ class TGFitter:
             optimizer_smpl.zero_grad()
             loss_recon, _, rendered_list, _, _, _, _ = self._fit_step(
                 model,
-                [gt_rgb, gt_mask, K, pose_b, pose_r, trans, None],
+                [gt_rgb, gt_mask, K, R, T, pose_b, pose_r, trans, None],
                 act_sph_ord=model.max_sph_order,
                 random_bg=False,
                 default_bg=getattr(self, "DEFAULT_BG", [1.0, 1.0, 1.0]),
@@ -1180,7 +1184,7 @@ class TGFitter:
         logging.info(f"Model has {model.N} points.")
         N_frames = len(real_data_provider.rgb_list)
         ret = real_data_provider(N_frames)
-        gt_rgb, gt_mask, K, pose_base, pose_rest, global_trans, time_index = ret
+        gt_rgb, gt_mask, K, R, T, pose_base, pose_rest, global_trans, time_index = ret
         pose = torch.cat([pose_base, pose_rest], 1)
         H, W = gt_rgb.shape[1:3]
         sph_o = model.max_sph_order
@@ -1196,7 +1200,7 @@ class TGFitter:
         )
         bg = [1.0, 1.0, 1.0]
         render_pkg = render_cam_pcl(
-            mu[0], fr[0], sc[0], op[0], sph[0], H, W, K[0], False, sph_o, bg
+            mu[0], fr[0], sc[0], op[0], sph[0], H, W, K[0], R[0], T[0], False, sph_o, bg
         )
         pred = render_pkg["rgb"].permute(1, 2, 0).detach().cpu().numpy()
         imageio.imsave(osp.join(self.log_dir, "fps_eval_sample.png"), pred)
@@ -1215,7 +1219,7 @@ class TGFitter:
             )
             bg = [1.0, 1.0, 1.0]
             render_pkg = render_cam_pcl(
-                mu[0], fr[0], sc[0], op[0], sph[0], H, W, K[0], False, sph_o, bg
+                mu[0], fr[0], sc[0], op[0], sph[0], H, W, K[0], R[0], T[0], False, sph_o, bg
             )
         end_t = time.time()
 
@@ -1286,13 +1290,13 @@ def tg_fitting_eval(solver, dataset_mode, seq_name, optimized_seq):
 
 if __name__ == "__main__":
     args = argparse.ArgumentParser()
-    args.add_argument("--profile", type=str, default="./profiles/people/people_1m.yaml")
-    args.add_argument("--dataset", type=str, default="people_snapshot")
-    args.add_argument("--seq", type=str, default="male-3-casual")
-    args.add_argument("--logbase", type=str, default="debug")
+    args.add_argument("--profile", type=str, default="./profiles/zju/zju_3m.yaml")
+    args.add_argument("--dataset", type=str, default="zju")
+    args.add_argument("--seq", type=str, default="394")
+    args.add_argument("--logbase", type=str, default="zju_3m")
     # remove the viz during optimization
-    args.add_argument("--fast", action="store_true")
-    args.add_argument("--no_eval", action="store_true")
+    args.add_argument("--fast", action="store_true", default=True)
+    args.add_argument("--no_eval", action="store_true", default=True)
     # for eval
     args.add_argument("--eval_only", action="store_true")
     args.add_argument("--log_dir", default="", type=str)

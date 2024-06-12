@@ -222,6 +222,8 @@ def _save_eval_maps(
         mask_gt = torch.as_tensor(data["mask"])[None].float().to(device)
         H, W = rgb_gt.shape[1:3]
         K = torch.as_tensor(data["K"]).float().to(device)
+        R = torch.as_tensor(data["R"]).float().to(device)
+        T = torch.as_tensor(data["T"]).float().to(device)
         pose = torch.as_tensor(data["smpl_pose"]).float().to(device)[None]
         trans = torch.as_tensor(data["smpl_trans"]).float().to(device)[None]
             
@@ -249,6 +251,8 @@ def _save_eval_maps(
                     rgb_gt,
                     mask_gt,
                     K[None],
+                    R[None],
+                    T[None],
                     pose_b,
                     pose_r,
                     trans,
@@ -275,6 +279,8 @@ def _save_eval_maps(
                 H,
                 W,
                 K,
+                R,
+                T,
                 bg,
                 rgb_gt,
                 save_fn,
@@ -284,14 +290,14 @@ def _save_eval_maps(
         else:
             save_fn = osp.join(test_save_dir, fn)
             _save_render_image_from_pose(
-                model, pose, trans, H, W, K, bg, rgb_gt, save_fn, time_index=batch_idx
+                model, pose, trans, H, W, K, R, T, bg, rgb_gt, save_fn, time_index=batch_idx
             )
     return
 
 
 @torch.no_grad()
 def _save_render_image_from_pose(
-    model, pose, trans, H, W, K, bg, rgb_gt, save_fn, time_index=None, As=None
+    model, pose, trans, H, W, K, R, T, bg, rgb_gt, save_fn, time_index=None, As=None
 ):
     act_sph_order = model.max_sph_order
     device = pose.device
@@ -303,7 +309,7 @@ def _save_render_image_from_pose(
         pose, trans, additional_dict=additional_dict, active_sph_order=act_sph_order
     )  # TODO: directly input optimized As!
     render_pkg = render_cam_pcl(
-        mu[0], fr[0], sc[0], op[0], sph[0], H, W, K, False, act_sph_order, bg
+        mu[0], fr[0], sc[0], op[0], sph[0], H, W, K, R, T, False, act_sph_order, bg
     )
     mask = (render_pkg["alpha"].squeeze(0) > 0.0).bool()
     render_pkg["rgb"][:, ~mask] = bg[0]  # either 0.0 or 1.0

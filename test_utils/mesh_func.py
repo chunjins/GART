@@ -280,6 +280,8 @@ def _save_eval_maps(
                     H,
                     W,
                     K,
+                    R,
+                    T,
                     bg,
                     rgb_gt,
                     save_fn,
@@ -289,7 +291,7 @@ def _save_eval_maps(
             else:
                 save_fn = osp.join(test_save_dir, fn)
                 render_pkg, mu = _save_render_image_from_pose(
-                    model, pose, trans, H, W, K, bg, rgb_gt, save_fn, time_index=batch_idx
+                    model, pose, trans, H, W, K, R, T, bg, rgb_gt, save_fn, time_index=batch_idx
                 )
 
             full_proj_transforms.append(render_pkg['full_proj_transform'])
@@ -377,8 +379,8 @@ def extract_mesh_unbounded(gaussians_xyz, rgbmaps, depthmaps, center, radius, fu
         weights = torch.ones_like(samples[:, 0])
         for i, full_proj_transform in tqdm(enumerate(full_proj_transforms), desc="TSDF integration progress"):
             # samples_i = torch.dot(samples, c2ws[i].T)
-            samples_i = samples @ c2ws[i, :3, :3].T + c2ws[i, :3, 3]
-            sdf, rgb, mask_proj = compute_sdf_perframe(i, samples_i,
+            # samples_i = samples @ c2ws[i, :3, :3].T + c2ws[i, :3, 3]
+            sdf, rgb, mask_proj = compute_sdf_perframe(i, samples,
                                                        depthmap=depthmaps[i],
                                                        rgbmap=rgbmaps[i],
                                                        full_proj_transform=full_proj_transform,
@@ -411,9 +413,9 @@ def extract_mesh_unbounded(gaussians_xyz, rgbmaps, depthmaps, center, radius, fu
     sdf_function = lambda x: compute_unbounded_tsdf(x, inv_contraction, voxel_size)
     from mesh_utils.mcube_utils import marching_cubes_with_contraction
 
-    gaussians_xyz_w = gaussians_xyz @ c2ws[-1, :3, :3].T + c2ws[-1, :3, 3]
+    # gaussians_xyz_w = gaussians_xyz @ c2ws[-1, :3, :3].T + c2ws[-1, :3, 3]
 
-    R = contract(normalize(gaussians_xyz_w)).norm(dim=-1).cpu().numpy()
+    R = contract(normalize(gaussians_xyz)).norm(dim=-1).cpu().numpy()
     R = np.quantile(R, q=0.95)
     R = min(R + 0.01, 1.9)
 
@@ -437,7 +439,7 @@ def extract_mesh_unbounded(gaussians_xyz, rgbmaps, depthmaps, center, radius, fu
 
 @torch.no_grad()
 def _save_render_image_from_pose(
-        model, pose, trans, H, W, K, bg, rgb_gt, save_fn, time_index=None, As=None
+        model, pose, trans, H, W, K, R, T, bg, rgb_gt, save_fn, time_index=None, As=None
 ):
     act_sph_order = model.max_sph_order
     device = pose.device
@@ -449,7 +451,7 @@ def _save_render_image_from_pose(
         pose, trans, additional_dict=additional_dict, active_sph_order=act_sph_order
     )  # TODO: directly input optimized As!
     render_pkg = render_cam_pcl(
-        mu[0], fr[0], sc[0], op[0], sph[0], H, W, K, False, act_sph_order, bg
+        mu[0], fr[0], sc[0], op[0], sph[0], H, W, K, R, T, False, act_sph_order, bg
     )
     # mask = (render_pkg["alpha"].squeeze(0) > 0.0).bool()
     # render_pkg["rgb"][:, ~mask] = bg[0]  # either 0.0 or 1.0
