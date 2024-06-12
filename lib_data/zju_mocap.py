@@ -369,16 +369,26 @@ class Dataset(Dataset):
         img = cv2.undistort(img, K, D)
         msk = cv2.undistort(msk, K, D)
 
+        R = np.array(self.cams["R"][cam_ind])
+        T = np.array(self.cams["T"][cam_ind]) / 1000.0
+
+        # M = np.eye(3)
+        # M[0, 2] = (K[0, 2] - W / 2) / K[0, 0]
+        # M[1, 2] = (K[1, 2] - H / 2) / K[1, 1]
+        # K[0, 2] = W / 2
+        # K[1, 2] = H / 2
+        # R = M @ R
+        # T = M @ T
+
+        R = np.transpose(R)
+        T = T[:, 0]
+
         H, W = int(img.shape[0] * self.image_zoom_ratio), int(img.shape[1] * self.image_zoom_ratio)
         img = cv2.resize(img, (W, H), interpolation=cv2.INTER_AREA)
         msk = cv2.resize(msk, (W, H), interpolation=cv2.INTER_NEAREST)
         K[:2] = K[:2] * self.image_zoom_ratio
 
         img[msk == 0] = self.bg_color
-
-        R = np.array(self.cams["R"][cam_ind])
-        T = np.array(self.cams["T"][cam_ind]).squeeze(-1) / 1000.0
-
 
         ret = {
             "rgb": img.astype(np.float32),

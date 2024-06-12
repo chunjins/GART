@@ -1,4 +1,7 @@
+import matplotlib
+matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
+
 from pytorch3d.transforms import matrix_to_axis_angle
 import imageio
 import torch
@@ -1290,7 +1293,7 @@ def tg_fitting_eval(solver, dataset_mode, seq_name, optimized_seq):
 
 if __name__ == "__main__":
     args = argparse.ArgumentParser()
-    args.add_argument("--profile", type=str, default="./profiles/zju/zju_3m.yaml")
+    args.add_argument("--profile", type=str, default="./profiles/zju/zju_30s.yaml")
     args.add_argument("--dataset", type=str, default="zju")
     args.add_argument("--seq", type=str, default="394")
     args.add_argument("--logbase", type=str, default="zju_3m")
@@ -1299,7 +1302,7 @@ if __name__ == "__main__":
     args.add_argument("--no_eval", action="store_true", default=True)
     # for eval
     args.add_argument("--eval_only", action="store_true")
-    args.add_argument("--log_dir", default="", type=str)
+    args.add_argument("--log_dir", default="logs/zju_3m/seq=394_prof=zju_30s_data=zju", type=str)
     args.add_argument("--skip_eval_if_exsists", action="store_true")
     # for viz
     args.add_argument("--viz_only", action="store_true")

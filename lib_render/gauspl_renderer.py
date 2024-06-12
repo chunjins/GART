@@ -67,12 +67,7 @@ def render_cam_pcl(
 
     # TODO: Check dynamic gaussian repos and original gaussian repo, they use projection matrix to handle non-centered K, not using this stupid padding like me
     # viewmatrix = torch.from_numpy(getWorld2View2(np.eye(3), np.zeros(3)).transpose(0, 1)).to(device)
-    viewmatrix = torch.from_numpy(getWorld2View2(CAM_R, CAM_T).transpose(0, 1)).to(device)
-    # viewmatrix = np.eye(4)
-    # viewmatrix[:3, :3], viewmatrix[:3, 3] = (
-    #     CAM_R,
-    #     CAM_T,
-    # )
+    viewmatrix = torch.from_numpy(getWorld2View2(CAM_R.cpu().numpy(), CAM_T.cpu().numpy()).transpose(0, 1)).to(device)
     projection_matrix = (
         getProjectionMatrix(znear=0.01, zfar=1.0, fovX=FoVx, fovY=FoVy).transpose(0, 1).to(device)
     )

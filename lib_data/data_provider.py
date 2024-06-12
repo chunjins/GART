@@ -111,13 +111,15 @@ class RealDataOptimizablePoseProviderPose(nn.Module):
             rgb_list,
             mask_list,
             K_list,
+            R_list,
+            T_list,
             pose_list,
             global_trans_list,
             betas,
         ) = self.prepare_for_fitting(dataset)
         for name, tensor in zip(
-            ["rgb_list", "mask_list", "K_list", "betas"],
-            [rgb_list, mask_list, K_list, betas],
+            ["rgb_list", "mask_list", "K_list", "R_list", "T_list", "betas"],
+            [rgb_list, mask_list, K_list, R_list, T_list, betas],
         ):
             # self.register_buffer(name, tensor)
             # * don't register buffer, just save them in RAM
@@ -142,6 +144,8 @@ class RealDataOptimizablePoseProviderPose(nn.Module):
         self.rgb_list = self.rgb_list.to(device)
         self.mask_list = self.mask_list.to(device)
         self.K_list = self.K_list.to(device)
+        self.R_list = self.R_list.to(device)
+        self.T_list = self.T_list.to(device)
         self.betas = self.betas.to(device)
 
     @property
@@ -220,6 +224,8 @@ class RealDataOptimizablePoseProviderPose(nn.Module):
         gt_rgb = self.rgb_list[t]  # B,H,W,3
         gt_mask = self.mask_list[t]  # B,H,W
         K = self.K_list[t]  # B,3,3
+        R = self.R_list[t]  # B,3,3
+        T = self.T_list[t]  # B,3,3
         pose_base = self.pose_base_list[t]
         pose_rest = self.pose_rest_list[t]
         global_trans = self.global_trans_list[t]
@@ -233,6 +239,8 @@ class RealDataOptimizablePoseProviderPose(nn.Module):
             gt_rgb.to(device),
             gt_mask.to(device),
             K.to(device),
+            R.to(device),
+            T.to(device),
             pose_base,
             pose_rest,
             global_trans,
@@ -240,7 +248,7 @@ class RealDataOptimizablePoseProviderPose(nn.Module):
         )
 
     def prepare_for_fitting(self, dataset):
-        rgb_list, mask_list, K_list, pose_list, global_trans_list = [], [], [], [], []
+        rgb_list, mask_list, K_list, R_list, T_list, pose_list, global_trans_list = [], [], [], [], [], [], []
         for t in tqdm(range(len(dataset))):
             poses, meta = dataset[t]
             betas, pose, global_trans = (
@@ -255,6 +263,8 @@ class RealDataOptimizablePoseProviderPose(nn.Module):
             )
             pose_list.append(pose), global_trans_list.append(global_trans)
             K = torch.from_numpy(poses["K"])
+            R = torch.from_numpy(poses["R"])
+            T = torch.from_numpy(poses["T"])
             gt_rgb = torch.from_numpy(poses["rgb"])
             mask = torch.from_numpy(poses["mask"])
             gt_rgb = gt_rgb * mask.unsqueeze(-1) + (1 - mask.unsqueeze(-1))
@@ -262,15 +272,20 @@ class RealDataOptimizablePoseProviderPose(nn.Module):
             self.H, self.W = gt_rgb.shape[:2]  # H,W,3
             rgb_list.append(gt_rgb), K_list.append(K)
             mask_list.append(mask)
+            R_list.append(R)
+            T_list.append(T)
+
         pose_list = torch.stack(pose_list)  # T, 24, 3
         global_trans_list = torch.stack(global_trans_list)
         rgb_list = torch.stack(rgb_list)  # T, H, W, 3
         mask_list = torch.stack(mask_list)  # T, H, W
         K_list = torch.stack(K_list)  # T, 3, 3
+        R_list = torch.stack(R_list)  # T, 3, 3
+        T_list = torch.stack(T_list)  # T, 3, 3
 
         if not self.balance:
             self.selection_prob = np.ones(rgb_list.shape[0]) / rgb_list.shape[0]
-            return rgb_list, mask_list, K_list, pose_list, global_trans_list, betas
+            return rgb_list, mask_list, K_list, R_list, T_list, pose_list, global_trans_list, betas
 
         # * Weight the views
         if pose_list.ndim == 3:
@@ -315,7 +330,7 @@ class RealDataOptimizablePoseProviderPose(nn.Module):
         self.angle_list = angle_list
         self.log_viz_dens = log_viz_dens
 
-        return rgb_list, mask_list, K_list, pose_list, global_trans_list, betas
+        return rgb_list, mask_list, K_list, R_list, T_list, pose_list, global_trans_list, betas
 
     def viz_selection_prob(self, save_fn):
         if not self.balance:

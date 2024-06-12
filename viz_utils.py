@@ -182,10 +182,14 @@ def viz_human_all(
         rgb_list = data_provider.rgb_list
         mask_list = data_provider.mask_list
         K_list = data_provider.K_list
+        R_list = data_provider.R_list
+        T_list = data_provider.T_list
         H, W = rgb_list.shape[1:3]
     else:
         H, W = 512, 512
         K_list = [torch.from_numpy(fov2K(45, H, W)).float().to(solver.device)]
+        R_list = [torch.from_numpy(np.eye(3)).float().to(solver.device)]
+        T_list = [torch.from_numpy(np.array([0,0,0])).float().to(solver.device)]
         global_trans_list = torch.zeros(1, 3).to(solver.device)
         global_trans_list[0, -1] = 3.0
 
@@ -198,6 +202,8 @@ def viz_human_all(
                 continue
             pose = pose_list[t][None]
             K = K_list[t]
+            R = R_list[t]
+            T = T_list[t]
             trans = global_trans_list[t][None]
             time_index = torch.Tensor([t]).long().to(solver.device)
             mu, fr, s, o, sph, _ = model(
@@ -222,6 +228,8 @@ def viz_human_all(
                 H,
                 W,
                 K,
+                R,
+                T,
                 False,
                 active_sph_order,
                 bg_color=getattr(solver, "DEFAULT_BG", [1.0, 1.0, 1.0]),
@@ -276,6 +284,8 @@ def viz_human_all(
             H,
             W,
             K_list[0],
+            R_list[0],
+            T_list[0],
             f"{viz_dir}/{name}.gif",
             time_index=None,  # if set to None and use t, the add_bone will hand this
             n_spinning=n_spinning,
