@@ -85,46 +85,56 @@ class data_extractor():
 
 
     def process_data(self, types = 'training'):
-        # for type in types:
-        #     if type == 'training':
-        #         # training
-        #         i_begin = META[self.seq_name]["begin_train_frame"]
-        #         i_intv = META[self.seq_name]["frame_interval_train"]
-        #         i_end = META[self.seq_name]["end_train_frame"]
-        #         self.copy_imgs(self.training_view, i_begin, i_end, i_intv)
-        #     elif type == 'novel_view':
-        #         # novel_view
-        #         i_begin = META[self.seq_name]["begin_train_frame"]
-        #         i_intv = META[self.seq_name]["frame_interval_eval"]
-        #         i_end = META[self.seq_name]["end_train_frame"]
-        #         self.copy_imgs(self.testing_view, i_begin, i_end, i_intv)
-        #     else:
-        #         # novel_pose
-        #         i_begin = META[self.seq_name]["begin_train_frame"] + META[self.seq_name]["end_train_frame"]
-        #         i_intv = META[self.seq_name]["frame_interval_eval"]
-        #         i_end = META[self.seq_name]["end_eval_frame"]
-        #         self.copy_imgs(self.testing_view, i_begin, i_end, i_intv)
+        for type in types:
 
-        for idx_frame in range(len(self.annots['ims'])):
-            for idx_view in range(self.num_cams):
-                img = self.annots['ims'][idx_frame]['ims'][idx_view]
+            if type == 'training':
+                # training
+                i_begin = META[self.seq_name]["begin_train_frame"]
+                i_intv = META[self.seq_name]["frame_interval_train"]
+                i_end = META[self.seq_name]["end_train_frame"]
+                self.copy_imgs(self.training_view, i_begin, i_end, i_intv)
 
-                if self.seq_name in ['313', '315']:
-                    frame_idx = int(img.split('_')[4])
-                    img_save = f'{frame_idx - 1:06d}.jpg'
-                    img = f'{idx_view:02d}/{img_save}'
-                else:
-                    img_save = img.split('/')[-1]
-                    img = f'{idx_view:02d}/{img_save}'
+            elif type == 'novel_view':
+                # novel_view
+                i_begin = META[self.seq_name]["begin_train_frame"]
+                i_intv = META[self.seq_name]["frame_interval_eval"]
+                i_end = META[self.seq_name]["end_train_frame"]
+                self.copy_imgs(self.testing_view, i_begin, i_end, i_intv)
 
-                self.annots['ims'][idx_frame]['ims'][idx_view] = img
+            elif type == 'novel_pose':
+                # novel_pose
+                i_begin = META[self.seq_name]["begin_train_frame"] + META[self.seq_name]["end_train_frame"]
+                i_intv = META[self.seq_name]["frame_interval_eval"]
+                i_end = META[self.seq_name]["end_eval_frame"]
+                self.copy_imgs(self.testing_view, i_begin, i_end, i_intv)
 
-        np.save(os.path.join(self.root_save, "annots.npy"), self.annots)
+            elif type == 'video':
+                # video
+                i_begin = META[self.seq_name]["begin_train_frame"] + META[self.seq_name]["end_train_frame"]
+                i_intv = 1
+                i_end = -1
+                self.copy_imgs(self.training_view, i_begin, i_end, i_intv)
+
+        # for idx_frame in range(len(self.annots['ims'])):
+        #     for idx_view in range(self.num_cams):
+        #         img = self.annots['ims'][idx_frame]['ims'][idx_view]
+        #
+        #         if self.seq_name in ['313', '315']:
+        #             frame_idx = int(img.split('_')[4])
+        #             img_save = f'{frame_idx - 1:06d}.jpg'
+        #             img = f'{idx_view:02d}/{img_save}'
+        #         else:
+        #             img_save = img.split('/')[-1]
+        #             img = f'{idx_view:02d}/{img_save}'
+        #
+        #         self.annots['ims'][idx_frame]['ims'][idx_view] = img
+        #
+        # np.save(os.path.join(self.root_save, "annots.npy"), self.annots)
 
 
 # subjects = ['313', '315', '377', '386', '387', '390', '392', '393', '394']
-subjects = ['377', '386', '387', '390', '392', '393']
-subjects = ['313', '315']
+subjects = ['313', '377', '386', '387', '390', '392', '393']
+# subjects = ['394']
 for sub in subjects:
     extractor = data_extractor(sub)
-    extractor.process_data(types=['training', 'novel_view', 'novel_pose'])
+    extractor.process_data(types=['video'])
