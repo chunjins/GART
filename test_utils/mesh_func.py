@@ -214,7 +214,10 @@ def _save_eval_maps(
         rgbmaps = []
         depthmaps = []
         full_proj_transforms = []
+        world_view_transforms = []
         c2ws = []
+        if len(datas) == 0:
+            continue
         for data, meta in zip(datas, metas):
             if dataset_mode == "zju":
                 for k in data.keys():
@@ -295,7 +298,8 @@ def _save_eval_maps(
                 )
 
             full_proj_transforms.append(render_pkg['full_proj_transform'])
-            c2ws.append(data['T_cw'].cpu().numpy())
+            world_view_transforms.append(render_pkg['viewmatrix'])
+            c2ws.append(torch.linalg.inv(data['T_cw']).cpu().numpy())
 
             rgbmaps.append(render_pkg['rgb'].cpu())
             depthmaps.append(render_pkg['dep'].cpu())
@@ -306,7 +310,7 @@ def _save_eval_maps(
         depthmaps = torch.stack(depthmaps, dim=0)
         c2ws = np.array(c2ws)
         center, radius =estimate_bounding_sphere(c2ws)
-        mesh = extract_mesh_unbounded(gaussians_xyz, rgbmaps, depthmaps, center, radius, full_proj_transforms, torch.from_numpy(c2ws).float().cuda(), resolution=512)
+        mesh = extract_mesh_unbounded(gaussians_xyz, rgbmaps, depthmaps, center, radius, full_proj_transforms, world_view_transforms, resolution=256)
 
         mesh.export(save_fn)
     return
@@ -318,9 +322,10 @@ def estimate_bounding_sphere(c2ws):
     """
     from mesh_utils.render_utils import focus_point_fn
     torch.cuda.empty_cache()
-    # c2ws = np.array(c2ws)
     # c2ws = np.array(
     #     [np.linalg.inv(np.asarray((cam.world_view_transform.T).cpu().numpy())) for cam in self.viewpoint_stack])
+    # c2ws = np.array([np.linalg.inv(np.asarray((cam.T).cpu().numpy())) for cam in world_view_transforms])
+
     poses = c2ws[:, :3, :] @ np.diag([1, -1, -1, 1])
     center = (focus_point_fn(poses))
     radius = np.linalg.norm(c2ws[:, :3, 3] - center, axis=-1).min()
@@ -331,7 +336,7 @@ def estimate_bounding_sphere(c2ws):
 
 
 @torch.no_grad()
-def extract_mesh_unbounded(gaussians_xyz, rgbmaps, depthmaps, center, radius, full_proj_transforms, c2ws, resolution=512):
+def extract_mesh_unbounded(gaussians_xyz, rgbmaps, depthmaps, center, radius, full_proj_transforms, world_view_transforms, resolution=512):
     """
     Experimental features, extracting meshes from unbounded scenes, not fully test across datasets.
     return o3d.mesh

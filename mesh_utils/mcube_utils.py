@@ -25,10 +25,10 @@ def marching_cubes_with_contraction(
     inv_contraction=None,
     max_range=32.0,
 ):
-    assert resolution % 512 == 0
+    assert resolution % 256 == 0
 
     resN = resolution
-    cropN = 512
+    cropN = 256
     level = 0
     N = resN // cropN
 

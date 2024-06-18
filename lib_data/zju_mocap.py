@@ -40,14 +40,38 @@ META = {
 }
 
 META = {
-    "313": {"begin_train_frame": 0, "end_train_frame": 800, "frame_interval_train": 1, "end_eval_frame": 1000, "frame_interval_eval": 30},
-    "315": {"begin_train_frame": 0, "end_train_frame": 1600, "frame_interval_train": 1, "end_eval_frame": 2000, "frame_interval_eval": 30},
-    "377": {"begin_train_frame": 0, "end_train_frame": 456, "frame_interval_train": 1, "end_eval_frame": 570, "frame_interval_eval": 30},
-    "386": {"begin_train_frame": 0, "end_train_frame": 432, "frame_interval_train": 1, "end_eval_frame": 540, "frame_interval_eval": 30},
-    "387": {"begin_train_frame": 0, "end_train_frame": 432, "frame_interval_train": 1, "end_eval_frame": 540, "frame_interval_eval": 30},
-    "390": {"begin_train_frame": 0, "end_train_frame": 937, "frame_interval_train": 1, "end_eval_frame": 1171, "frame_interval_eval": 30},
-    "392": {"begin_train_frame": 0, "end_train_frame": 445, "frame_interval_train": 1, "end_eval_frame": 556, "frame_interval_eval": 30},
-    "393": {"begin_train_frame": 0, "end_train_frame": 527, "frame_interval_train": 1, "end_eval_frame": 658, "frame_interval_eval": 30},
+    "313": {"begin_train_frame": 0, "end_train_frame": 800, "frame_interval_train": 1,
+            "end_eval_frame": 1000, "frame_interval_eval": 30,
+            "begin_geo_frame": 0, "end_geo_frame": 31, "frame_interval_geo": 30, },
+
+    "315": {"begin_train_frame": 0, "end_train_frame": 1600, "frame_interval_train": 1,
+            "end_eval_frame": 2000, "frame_interval_eval": 30,
+            "begin_geo_frame": 0, "end_geo_frame": 391, "frame_interval_geo": 30, },
+
+    "377": {"begin_train_frame": 0, "end_train_frame": 456, "frame_interval_train": 1,
+            "end_eval_frame": 570, "frame_interval_eval": 30,
+            "begin_geo_frame": 30, "end_geo_frame": 121, "frame_interval_geo": 30, },
+
+    "386": {"begin_train_frame": 0, "end_train_frame": 432, "frame_interval_train": 1,
+            "end_eval_frame": 540, "frame_interval_eval": 30,
+            "begin_geo_frame": 150, "end_geo_frame": 271, "frame_interval_geo": 30, },
+
+    "387": {"begin_train_frame": 0, "end_train_frame": 432, "frame_interval_train": 1,
+            "end_eval_frame": 540, "frame_interval_eval": 30,
+            "begin_geo_frame": 150, "end_geo_frame": 151, "frame_interval_geo": 30, },
+
+    "390": {"begin_train_frame": 0, "end_train_frame": 937, "frame_interval_train": 1,
+            "end_eval_frame": 1171, "frame_interval_eval": 30,
+            "begin_geo_frame": 720, "end_geo_frame": 721, "frame_interval_geo": 30, },
+
+    "392": {"begin_train_frame": 0, "end_train_frame": 445, "frame_interval_train": 1,
+            "end_eval_frame": 556, "frame_interval_eval": 30,
+            "begin_geo_frame": 30, "end_geo_frame": 31, "frame_interval_geo": 30, },
+
+    "393": {"begin_train_frame": 0, "end_train_frame": 527, "frame_interval_train": 1,
+            "end_eval_frame": 658, "frame_interval_eval": 30,
+            "begin_geo_frame": 0, "end_geo_frame": 241, "frame_interval_geo": 30, },
+
     "394": {"begin_train_frame": 0, "end_train_frame": 380, "frame_interval_train": 1,
             "end_eval_frame": 475, "frame_interval_eval": 30,
             "begin_geo_frame": 0, "end_geo_frame": 271, "frame_interval_geo": 30, },
@@ -350,7 +374,6 @@ class Dataset(Dataset):
 
 
     def getitem(self, index):
-
         img_path = os.path.join(self.data_root, self.video_name, 'images', self.ims[index])
         img = imageio.imread(img_path).astype(np.float32) / 255.0
         mask_path = os.path.join(
@@ -416,6 +439,9 @@ class Dataset(Dataset):
 
     def __getitem__(self, index):
         if self.split == 'geometry':
+            if index >= self.num_frames:
+                return [], []
+                
             idxs = [index * self.num_cams + cam for cam in range(self.num_cams)]
             rets = []
             meta_infos = []
