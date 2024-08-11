@@ -93,7 +93,7 @@ def test(
             data_root="../data/zju_mocap",
             video_name=seq_name,
             test_novel_pose=False,
-            split="test",
+            split="video", # test video
             image_zoom_ratio=0.5,
         )
         bg = [0.0, 0.0, 0.0]  # zju use black background
@@ -162,9 +162,9 @@ def test(
     )
 
     if tto_flag:
-        _evaluate_dir(evaluator, solver.log_dir, "test_tto")
+        _evaluate_dir(evaluator, solver.log_dir)
     else:
-        _evaluate_dir(evaluator, solver.log_dir, "test")
+        _evaluate_dir(evaluator, solver.log_dir)
 
     return
 
@@ -191,7 +191,8 @@ def _save_eval_maps(
     model.eval()
     
     if tto_flag:
-        test_save_dir_tto = osp.join(log_dir, f"{save_name}_tto")
+        # test_save_dir_tto = osp.join(log_dir, f"{save_name}_tto")
+        test_save_dir_tto = osp.join(log_dir, 'video')
         os.makedirs(test_save_dir_tto, exist_ok=True)
     else:
         test_save_dir = osp.join(log_dir, save_name)

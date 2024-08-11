@@ -160,6 +160,8 @@ class Dataset(Dataset):
         elif split == "val":
             self.view = test_view[::4]
             # self.view = test_view
+        elif split == 'video':
+            self.view = training_view
 
         i = META[self.video_name]["begin_train_frame"]
         i_intv = META[self.video_name]["frame_interval_train"]
@@ -177,6 +179,10 @@ class Dataset(Dataset):
             i = META[self.video_name]["begin_geo_frame"]
             i_intv = META[self.video_name]["frame_interval_geo"]
             ni = META[self.video_name]["end_geo_frame"]
+        if split == 'video':
+            i = META[self.video_name]["end_train_frame"]
+            i_intv = 1
+            ni = -1
 
         if test_novel_pose:
             i = (
