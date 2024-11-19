@@ -15,6 +15,7 @@ import cv2, glob
 import pandas as pd
 from tqdm import tqdm
 from lib_data.instant_avatar_people_snapshot import Dataset as InstantAvatarDataset
+from lib_data.custom import Dataset as CustomDataset
 from lib_data.zju_mocap import Dataset as ZJUDataset, get_batch_sampler
 from lib_data.instant_avatar_wild import Dataset as InstantAvatarWildDataset
 from lib_data.dog_demo import Dataset as DogDemoDataset
@@ -69,10 +70,11 @@ def test(
 ):
     device = solver.device
     model = solver.load_saved_model()
-
+    save_name = 'test'
     assert dataset_mode in [
         "people_snapshot",
         "zju",
+        "mvhuman",
         "instant_avatar_wild",
         "dog_demo",
     ], f"Unknown dataset mode {dataset_mode}"
@@ -97,6 +99,17 @@ def test(
             image_zoom_ratio=0.5,
         )
         bg = [0.0, 0.0, 0.0]  # zju use black background
+    elif dataset_mode == "mvhuman":
+        eval_mode = "avatar"
+        data_type = 'novel_view'
+        test_dataset = CustomDataset(
+            data_root="../data/mvhuman",
+            video_name=seq_name,
+            split=data_type, # test video
+            image_zoom_ratio=1.0,
+        )
+        save_name = data_type
+        bg = [1.0, 1.0, 1.0]  # zju use black background
     elif dataset_mode == "instant_avatar_wild":
         eval_mode = "avatar"
         test_dataset = InstantAvatarWildDataset(
@@ -144,7 +157,7 @@ def test(
 
     _save_eval_maps(
         solver.log_dir,
-        "test",
+        save_name,
         model,
         solver,
         test_dataset,
@@ -191,8 +204,8 @@ def _save_eval_maps(
     model.eval()
     
     if tto_flag:
-        # test_save_dir_tto = osp.join(log_dir, f"{save_name}_tto")
-        test_save_dir_tto = osp.join(log_dir, 'video')
+        test_save_dir_tto = osp.join(log_dir, f"{save_name}")
+        # test_save_dir_tto = osp.join(log_dir, 'video')
         os.makedirs(test_save_dir_tto, exist_ok=True)
     else:
         test_save_dir = osp.join(log_dir, save_name)
@@ -232,7 +245,7 @@ def _save_eval_maps(
             # fn = f"frame{int(meta['frame_idx']):04d}_view{int(meta['cam_ind']):04d}.png"
             fn = f"camera_{int(meta['cam_ind'])+1:02d}_frame_{int(meta['frame_idx']):06d}.png"
         else:
-            fn = f"{batch_idx}.png"
+            fn = f"{batch_idx:04d}.png"
             
         if tto_flag:
             # change the pose from the dataset to fit the test view

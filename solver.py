@@ -1273,6 +1273,19 @@ def tg_fitting_eval(solver, dataset_mode, seq_name, optimized_seq):
             trans_lr=4e-3,
             training_optimized_seq=optimized_seq,
         )
+    elif dataset_mode == "mvhuman":
+        test(
+            solver,
+            seq_name=seq_name,
+            tto_flag=True,
+            tto_step=50,
+            tto_decay=20,
+            dataset_mode=dataset_mode,
+            pose_base_lr=4e-3,
+            pose_rest_lr=4e-3,
+            trans_lr=4e-3,
+            training_optimized_seq=optimized_seq,
+        )
     elif dataset_mode == "dog_demo":
         test(
             solver,
@@ -1339,6 +1352,9 @@ if __name__ == "__main__":
         mode = "human"
         smpl_path = "./data/smpl_model/SMPL_NEUTRAL.pkl"
     elif dataset_mode == "ubcfashion":
+        mode = "human"
+        smpl_path = "./data/smpl_model/SMPL_NEUTRAL.pkl"
+    elif dataset_mode == 'mvhuman':
         mode = "human"
         smpl_path = "./data/smpl_model/SMPL_NEUTRAL.pkl"
     elif dataset_mode == "dog_demo":

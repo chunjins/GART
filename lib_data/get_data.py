@@ -5,6 +5,7 @@ sys.path.append(osp.dirname(osp.abspath(__file__)))
 from ubcfasion_perframe import Dataset as UBCFasionDataset
 from instant_avatar_people_snapshot import Dataset as InstantAvatarDataset
 from zju_mocap import Dataset as ZJUDataset, get_batch_sampler
+from custom import Dataset as CustomDataset
 from dog_demo import Dataset as DogDemoDataset
 from data_provider import RealDataOptimizablePoseProviderPose, DatabasePoseProvider
 from instant_avatar_wild import Dataset as InstantAvatarWildDataset
@@ -42,6 +43,14 @@ def prepare_real_seq(
     elif dataset_mode == "zju":
         dataset = ZJUDataset(
             data_root="../data/zju_mocap",
+            video_name=seq_name,
+            split=split,
+            image_zoom_ratio=image_zoom_ratio,
+        )
+    elif dataset_mode == "mvhuman":
+        image_zoom_ratio = 1.0
+        dataset = CustomDataset(
+            data_root="../data/mvhuman",
             video_name=seq_name,
             split=split,
             image_zoom_ratio=image_zoom_ratio,
