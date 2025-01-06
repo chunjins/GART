@@ -55,6 +55,14 @@ def prepare_real_seq(
             split=split,
             image_zoom_ratio=image_zoom_ratio,
         )
+    elif dataset_mode == "actorhq":
+        image_zoom_ratio = 1.0
+        dataset = CustomDataset(
+            data_root="../data/actorhq",
+            video_name=seq_name,
+            split=split,
+            image_zoom_ratio=image_zoom_ratio,
+        )
     elif dataset_mode == "instant_avatar_wild":
         # assert image_zoom_ratio == 1.0, "Check! in the wild data should use 1.0"
         if image_zoom_ratio != 1.0:
