@@ -62,7 +62,7 @@ class Dataset(Dataset):
         self.img_num = dataset['img_shape'][0]
 
         self.smpl_params = {}
-        self.smpl_params['global_orient'] = dataset['global_orient'][:]
+        self.smpl_params['global_orient'] = dataset['smpl_Rh'][:]
         self.smpl_params['transl'] = dataset['smpl_transl'][:]
         self.smpl_params['body_pose'] = dataset['smpl_pose'][:]
         self.smpl_params['betas'] = dataset['smpl_betas'][:]
@@ -99,9 +99,12 @@ class Dataset(Dataset):
                                     fy=self.image_zoom_ratio,
                                     interpolation=cv2.INTER_LINEAR)
 
+        if np.max(msk) > 1:
+            msk = msk / 255.
+
         img = (img[..., :3] / 255).astype(np.float32)
         bg_color = np.ones_like(img).astype(np.float32)
-        img = img * msk[..., None] + (1 - msk[..., None])
+        img = img * msk[..., None] + (1 - msk[..., None]) #TODO is this matter?
 
         return img, msk
 
