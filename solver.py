@@ -46,6 +46,7 @@ try:
 except:
     logging.warning("No guidance module")
 
+os.environ['TORCH_HOME'] = '/ubc/cs/home/c/chunjins/chunjin_shield/project/torch'
 
 class TGFitter:
     def __init__(
