@@ -76,6 +76,7 @@ def test(
         "zju",
         "mvhuman",
         "actorhq",
+        "mpi"
         "instant_avatar_wild",
         "dog_demo",
     ], f"Unknown dataset mode {dataset_mode}"
@@ -123,6 +124,17 @@ def test(
         save_name = data_type
         bg = [0.0, 0.0, 0.0]  # zju use black background
 
+    elif dataset_mode == "mpi":
+        eval_mode = "avatar"
+        data_type = 'novel_pose' # TODO need to change each time
+        test_dataset = CustomDataset(
+            data_root="../data/mpi",
+            video_name=seq_name,
+            split=data_type, # test video
+            image_zoom_ratio=1.0,
+        )
+        save_name = data_type
+        bg = [0.0, 0.0, 0.0]  # zju use black background
     elif dataset_mode == "instant_avatar_wild":
         eval_mode = "avatar"
         test_dataset = InstantAvatarWildDataset(

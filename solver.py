@@ -1273,7 +1273,7 @@ def tg_fitting_eval(solver, dataset_mode, seq_name, optimized_seq):
             trans_lr=4e-3,
             training_optimized_seq=optimized_seq,
         )
-    elif dataset_mode == "mvhuman" or dataset_mode == "actorhq":
+    elif dataset_mode == "mvhuman" or dataset_mode == "actorhq" or dataset_mode == 'mpi':
         test(
             solver,
             seq_name=seq_name,
@@ -1299,7 +1299,18 @@ def tg_fitting_eval(solver, dataset_mode, seq_name, optimized_seq):
             trans_lr=2e-2,
         )
     else:
-        pass
+        test(
+            solver,
+            seq_name=seq_name,
+            tto_flag=True,
+            tto_step=50,
+            tto_decay=20,
+            dataset_mode=dataset_mode,
+            pose_base_lr=4e-3,
+            pose_rest_lr=4e-3,
+            trans_lr=4e-3,
+            training_optimized_seq=optimized_seq,
+        )
     # solver.eval_fps(solver.load_saved_model(), optimized_seq, rounds=10)
     return
 
@@ -1354,14 +1365,16 @@ if __name__ == "__main__":
     elif dataset_mode == "ubcfashion":
         mode = "human"
         smpl_path = "./data/smpl_model/SMPL_NEUTRAL.pkl"
-    elif dataset_mode == 'mvhuman' or  dataset_mode == 'actorhq':
+    elif dataset_mode == 'mvhuman' or  dataset_mode == 'actorhq' or  dataset_mode == 'mpi':
         mode = "human"
         smpl_path = "./data/smpl_model/SMPL_NEUTRAL.pkl"
     elif dataset_mode == "dog_demo":
         mode = "dog"
         smpl_path = None
-    else:
-        raise NotImplementedError()
+    else: # Do the custom setting for data we processed
+        mode = "human"
+        smpl_path = "./data/smpl_model/SMPL_NEUTRAL.pkl"
+        # raise NotImplementedError()
 
     solver = TGFitter(
         log_dir=log_dir,

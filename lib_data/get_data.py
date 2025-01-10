@@ -63,6 +63,14 @@ def prepare_real_seq(
             split=split,
             image_zoom_ratio=image_zoom_ratio,
         )
+    elif dataset_mode == "mpi":
+        image_zoom_ratio = 1.0
+        dataset = CustomDataset(
+            data_root="../data/mpi",
+            video_name=seq_name,
+            split=split,
+            image_zoom_ratio=image_zoom_ratio,
+        )
     elif dataset_mode == "instant_avatar_wild":
         # assert image_zoom_ratio == 1.0, "Check! in the wild data should use 1.0"
         if image_zoom_ratio != 1.0:
@@ -79,7 +87,15 @@ def prepare_real_seq(
     elif dataset_mode == "dog_demo":
         dataset = DogDemoDataset(data_root="./data/dog_data_official/", video_name=seq_name)
     else:
-        raise NotImplementedError("Unknown mode: {}".format(dataset_mode))
+        image_zoom_ratio = 1.0
+        dataset = CustomDataset(
+            data_root=f"../data/{dataset_mode}",
+            video_name=seq_name,
+            split=split,
+            image_zoom_ratio=image_zoom_ratio,
+        )
+
+        # raise NotImplementedError("Unknown mode: {}".format(dataset_mode))
 
     # prepare an optimizable data provider
     optimizable_data_provider = RealDataOptimizablePoseProviderPose(
