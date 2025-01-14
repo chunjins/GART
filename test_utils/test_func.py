@@ -358,8 +358,11 @@ def _save_render_image_from_pose(
     errmap = (pred_rgb - rgb_gt).square().sum(-1).sqrt().cpu().numpy()[0] / np.sqrt(3)
     errmap = cv2.applyColorMap((errmap * 255).astype(np.uint8), cv2.COLORMAP_JET)
     errmap = torch.from_numpy(errmap).to(device)[None] / 255
+    
+    msk_out=  torch.cat([mask[None,...,None], mask[None,...,None], mask[None,...,None]], dim=-1)
+    
     img = torch.cat(
-        [rgb_gt[..., [2, 1, 0]], pred_rgb[..., [2, 1, 0]], errmap], dim=2
+        [rgb_gt[..., [2, 1, 0]], pred_rgb[..., [2, 1, 0]], msk_out, errmap], dim=2
     )  # ! note, here already swapped the channel order
     cv2.imwrite(save_fn, img.cpu().numpy()[0] * 255)
     return

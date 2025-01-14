@@ -232,7 +232,7 @@ class GaussianTemplateModel(nn.Module):
         else:
             raise NotImplementedError(f"Unknown {w_memory_type}")
 
-        self._features_localcode = nn.Parameter(
+        self._features_localcode = nn.Parameter( # TODO to check what is this feature used for
             torch.zeros(self.N, self.f_localcode_dim)
         )
 
@@ -511,7 +511,7 @@ class GaussianTemplateModel(nn.Module):
     # * Gaussian Control
     def record_xyz_grad_radii(self, viewspace_point_tensor, radii, update_filter):
         # Record the gradient norm, invariant across different poses
-        assert len(viewspace_point_tensor) == self.N
+        assert len(viewspace_point_tensor) == self.N # TODO check the difference
         self.xyz_gradient_accum[update_filter] += torch.norm(
             viewspace_point_tensor.grad[update_filter, :2], dim=-1, keepdim=False
         )
@@ -562,7 +562,7 @@ class GaussianTemplateModel(nn.Module):
 
         self.xyz_gradient_accum = torch.zeros(self._xyz.shape[0], device="cuda")
         self.xyz_gradient_denom = torch.zeros(self._xyz.shape[0], device="cuda")
-        self.max_radii2D = torch.cat(
+        self.max_radii2D = torch.cat( # TODO check the difference
             [self.max_radii2D, torch.zeros_like(new_xyz[:, 0])], dim=0
         )
         return

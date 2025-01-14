@@ -1278,7 +1278,7 @@ def tg_fitting_eval(solver, dataset_mode, seq_name, optimized_seq):
         test(
             solver,
             seq_name=seq_name,
-            tto_flag=True,
+            tto_flag=False, #True,
             tto_step=50,
             tto_decay=20,
             dataset_mode=dataset_mode,
@@ -1405,7 +1405,7 @@ if __name__ == "__main__":
         data_provider.load_state_dict(
             torch.load(osp.join(log_dir, "training_poses.pth")), strict=True
         )
-        solver.eval_fps(solver.load_saved_model(), data_provider, rounds=10)
+        # solver.eval_fps(solver.load_saved_model(), data_provider, rounds=10)
         tg_fitting_eval(solver, dataset_mode, seq_name, data_provider)
         logging.info("Done")
         sys.exit(0)
@@ -1431,7 +1431,7 @@ if __name__ == "__main__":
     elif mode == "dog":
         viz_dog_all(solver, optimized_seq)
 
-    solver.eval_fps(solver.load_saved_model(), optimized_seq, rounds=10)
+    # solver.eval_fps(solver.load_saved_model(), optimized_seq, rounds=10)
     if args.no_eval:
         logging.info("No eval, done!")
         sys.exit(0)
